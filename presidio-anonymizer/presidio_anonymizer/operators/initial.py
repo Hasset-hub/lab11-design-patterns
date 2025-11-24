@@ -16,4 +16,16 @@ class Initial(Operator):
         return True
 
     def operate(self, text: str, params: dict = None) -> str:
-        return "FAIL"
+        import re
+
+        result = []
+        # Split words by whitespace
+        for word in text.strip().split():
+            # Find first alphanumeric character
+            match = re.search(r'\w', word)
+            if match:
+                initial = match.group(0).upper() + "."
+                prefix = word[:match.start()]  # preserve leading chars
+                result.append(prefix + initial)
+        return " ".join(result)
+    
