@@ -9,8 +9,8 @@ def test_correct_name():
     [
         ("John Smith", "J. S."),
         ("     Eastern    Michigan   University ", "E. M. U."),  # extra whitespace
-        #("@abc", "@A."),  # leading non-alphanumeric
-        #("--**abc", "--**A."),  # leading symbols
+        ("@abc", "@A."),  # leading non-alphanumeric
+        ("--**abc", "--**A."),  # leading symbols
     ]
 )
 def test_given_value_for_initial(input_text, expected):
