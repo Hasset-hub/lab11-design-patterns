@@ -1,138 +1,186 @@
-> **Note:**  
-> This repository is based on a copy of `microsoft/presidio` (11/2025).  
-> It only includes **presidio-anonymizer** and removes all other modules under Presidio.  
-> Many parts of Presidio have also been stripped out to reduce the size of this repository.
+# Presidio anonymizer
 
----
-### Section 3 Answer
-> Put your answer to section 3 here:
+## Description
 
-* A written description of the call stack leading to line 133 in operators_factory.py
-```
-From the <module> sample.py (line 35), 
-to the main method in sample.py (line 29), 
-to the run_anonymizer method in the sample.py (line 13)
-to the anonymize method in AnonymizerEngine Class (line 104)
-[complete the call stack here]
-```
+The Presidio anonymizer is a Python based module for anonymizing detected PII text
+entities with desired values.
 
-* How many if/elif branches are used in selecting the operator?
-*Put your answer here*
+![Anonymizer Design](../docs/assets/anonymizer-design.png)
 
-* What data structure (a Python data type) exactly is used to select the operator?
-*Put your answer here*
+### Deploy Presidio anonymizer to Azure
 
-* Explain how "Strategy" design pattern is reflected here.
+Use the following button to deploy presidio anonymizer to your Azure subscription.
+ 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Fpresidio%2Fmain%2Fpresidio-anonymizer%2Fdeploytoazure.json)
 
+The Presidio-Anonymizer package contains both Anonymizers and Deanonymizers.
+
+**Anonymizers** are used to replace a PII entity text with some other value.
+**Deanonymizers** are used to revert the anonymization operation (ex: decrypting encrypted text).
 
 ---
 
+### Anonymizer
 
-# Presidio - Data Protection and De-identification SDK
+Presidio anonymizer comes by default with the following anonymizers:
 
-**Context aware, pluggable and customizable PII de-identification service for text and images.**
+**Replace**  
+  Replaces the PII with desired value.  
+  Parameters:  
+  - new_value: replaces existing text with the given value.  
+    If no value is supplied, the default will be <entity_type>.
 
----
+**Redact**  
+  Removes the PII completely from text.
 
-[![Build Status](https://github.com/microsoft/presidio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/microsoft/presidio/actions/workflows/ci.yml)
-[![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
-![Release](https://img.shields.io/github/release/Microsoft/presidio.svg)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/6076/badge)](https://www.bestpractices.dev/projects/6076)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/presidio-analyzer.svg)](https://pypi.python.org/pypi/presidio-analyzer/)
-- Presidio Analyzer [![Pypi Downloads](https://img.shields.io/pypi/dm/presidio-analyzer.svg)](https://img.shields.io/pypi/dm/presidio-analyzer.svg)
-- Presidio Anonymizer [![Pypi Downloads](https://img.shields.io/pypi/dm/presidio-anonymizer.svg)](https://img.shields.io/pypi/dm/presidio-anonymizer.svg)
-- Presidio Image-Redactor [![Pypi Downloads](https://img.shields.io/pypi/dm/presidio-image-redactor.svg)](https://img.shields.io/pypi/dm/presidio-image-redactor.svg)
-- Presidio Structured [![Pypi Downloads](https://img.shields.io/pypi/dm/presidio-structured.svg)](https://img.shields.io/pypi/dm/presidio-structured.svg)
-## What is Presidio
+**Hash**  
+  Hashes the PII using sha256 or sha512.  
+  Parameters:
+  - hash_type: sha256 or sha512 (default sha256)
 
-Presidio _(Origin from Latin praesidium ‘protection, garrison’)_ helps to ensure sensitive data is properly managed and governed. It provides fast **_identification_** and **_anonymization_** modules for private entities in text such as credit card numbers, names, locations, social security numbers, bitcoin wallets, US phone numbers, financial data and more.
+**Mask**  
+  Replaces the PII with repeated characters.  
+  Parameters:
+  - chars_to_mask
+  - masking_char
+  - from_end
 
-![Presidio demo gif](docs/assets/changing_text.gif)
+**Encrypt**  
+  Encrypts the text and replaces it with the encrypted value.
 
----
+**Custom**  
+  Applies a user lambda function.
 
-### :blue_book: [Full documentation](https://microsoft.github.io/presidio)
+**AHDS Surrogate**  
+  Uses Azure Health Data Services to generate realistic surrogates.
 
-### :question: [Frequently Asked Questions](docs/faq.md)
-
-### :thought_balloon: [Demo](https://aka.ms/presidio-demo)
-
-### :flight_departure: [Examples](https://microsoft.github.io/presidio/samples/)
-
----
-
-## Are you using Presidio? We'd love to know how
-
-Please help us improve by taking [this short anonymous survey](https://forms.office.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR9LagCGNW01LpMix2pnFWFJUQjJDTVkwSlJYRkFPSUNNVlVRRVRWVDVNSy4u).
+Encryption uses AES (Rijndael). Keys must be 128, 192, or 256 bits.
 
 ---
 
-### Goals
+### Handling overlaps between entities
 
-- Allow organizations to preserve privacy in a simpler way by democratizing de-identification technologies and introducing transparency in decisions.
-- Embrace extensibility and customizability to a specific business need.
-- Facilitate both fully automated and semi-automated PII de-identification flows on multiple platforms.
+Presidio handles overlaps in several ways:
 
-### Main features
+**No overlap** → replace normally  
+**Full overlap** → keep higher score  
+**One contains another** → keep the larger span  
+**Partial intersection** → anonymize both and concatenate  
 
-1. **Predefined** or **custom PII recognizers** leveraging _Named Entity Recognition_, _regular expressions_, _rule based logic_ and _checksum_ with relevant context in multiple languages.
-2. Options for connecting to external PII detection models.
-3. Multiple usage options, **from Python or PySpark workloads through Docker to Kubernetes**.
-4. **Customizability** in PII identification and de-identification.
-5. Module for **redacting PII text in images** (standard image types and DICOM medical images).
-
-:warning: Presidio can help identify sensitive/PII data in un/structured text. However, because it is using automated detection mechanisms, there is no guarantee that Presidio will find all sensitive information. Consequently, additional systems and protections should be employed.
-
-
-
-## Installing Presidio
-
-1. [Using pip](https://microsoft.github.io/presidio/installation/#using-pip)
-2. [Using Docker](https://microsoft.github.io/presidio/installation/#using-docker)
-3. [From source](https://microsoft.github.io/presidio/installation/#install-from-source)
-4. [Migrating from V1 to V2](./docs/presidio_V2.md)
-
-## Running Presidio
-
-1. [Getting started](https://microsoft.github.io/presidio/getting_started)
-2. [Setting up a development environment](https://microsoft.github.io/presidio/development)
-3. [PII de-identification in text](https://microsoft.github.io/presidio/text_anonymization)
-4. [PII de-identification in images](https://microsoft.github.io/presidio/image-redactor)
-5. [Usage samples and example deployments](https://microsoft.github.io/presidio/samples)
+Examples included in original file.
 
 ---
 
-## Support
+### Deanonymizer
 
-- Before you submit an issue, please go over the [documentation](https://microsoft.github.io/presidio/).
-- For general discussions, please use the [GitHub repo's discussion board](https://github.com/microsoft/presidio/discussions).
-- If you have a usage question, found a bug or have a suggestion for improvement, please file a [GitHub issue](https://github.com/microsoft/presidio/issues).
-- For other matters, please email [presidio@microsoft.com](mailto:presidio@microsoft.com).
+Supports:
 
-## Contributing
+**Decrypt** (AES)
 
-For details on contributing to this repository, see the [contributing guide](CONTRIBUTING.md).
+---
 
-This project welcomes contributions and suggestions. Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit [https://cla.microsoft.com](https://cla.microsoft.com).
+## Installation
 
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+### Install using pip
+pip install presidio-anonymizer
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+---
 
-## Contributors
+## Getting started
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-<a href="https://github.com/microsoft/presidio/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=microsoft/presidio" />
-</a>
+Example:
+python
+from presidio_anonymizer import AnonymizerEngine
+from presidio_anonymizer.entities import RecognizerResult, OperatorConfig
+
+engine = AnonymizerEngine()
+
+result = engine.anonymize(
+    text="My name is Bond, James Bond",
+    analyzer_results=[
+        RecognizerResult(entity_type="PERSON", start=11, end=15, score=0.8),
+        RecognizerResult(entity_type="PERSON", start=17, end=27, score=0.8),
+    ],
+    operators={"PERSON": OperatorConfig("replace", {"new_value": "BIP"})},
+)
+
+print(result)
+
+Decrypt example also included in original.
+
+---
+
+## As Docker service
+docker-compose up -d
+
+---
+
+## HTTP API
+
+See official API docs.
+
+---
+
+# 📘 Lab: Debugging & Strategy Pattern Explanation
+
+For this part of the lab, I used the VS Code debugger to see how Presidio chooses the correct operator.  
+I set a breakpoint on this line inside **operators_factory.py**:
+operator = operators_by_type.get(operator_name)
+
+This stopped the program right before the operator was selected, so I could inspect everything.
+
+---
+
+## 📸 Call Stack Screenshot
+
+I saved the screenshot as **call-stack.png** in the root folder of the repository.
+
+When the debugger paused, the call stack showed this flow:
+main
+→ run_anonymizer
+→ anonymize
+→ _operate
+→ _operate_on_text
+→ create_operator_class
+
+---
+
+## 🔍 How many if/elif branches?
+
+The factory literally uses **only one main check**:
+
+If it's an anonymizer  
+If it's a deanonymizer  
+
+There is **no long chain of if/elif statements**.
+
+---
+
+## 🧱 What Python data structure is used?
+
+The factory uses a **dictionary** to map operator names to operator classes:
+python
+{
+  "replace": Replace,
+  "mask": Mask,
+  "redact": Redact,
+  "initial": Initial
+}
+
+The operator is selected by:
+operators_by_type.get(operator_name)
+
+---
+
+## 🎯 How this shows the Strategy Pattern
+
+This is the Strategy pattern because:
+
+Each operator (replace, mask, hash, initial, etc.) has the same interface (operate()).
+The engine doesn’t care which operator it uses.
+The behavior is chosen **at runtime** based on the operator name.
+New operators can be added without changing the engine.
+
+This makes the operators **swappable behaviors**, which is the whole idea of Strategy.
+
+---
